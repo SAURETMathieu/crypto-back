@@ -4,14 +4,30 @@
     "allowJs": true,
     "module": "commonjs",
     "strict": true,
+    "forceConsistentCasingInFileNames": true,
+    "noEmit": true,
     "esModuleInterop": true,
     "skipLibCheck": true,
     "outDir": "./dist",
     "rootDir": "./src",
     "resolveJsonModule": true,
     "paths": {
-      "@/*": ["./src/*"]
-    }
+      "@/*": ["./src/*"],
+      "@/app/*": ["./src/app/*"],
+      "@/middlewares/*": ["./src/app/middlewares/*"],
+      "@/helpers/*": ["./src/app/helpers/*"],
+      "@/routers/*": ["./src/app/routers/*"],
+      "@/errors/*": ["./src/app/errors/*"],
+      "@/utils/*": ["./src/app/utils/*"],
+      "@/services/*": ["./src/app/services/*"],
+      "@/schemas/*": ["./src/app/schemas/*"],
+      "@/controllers/*": ["./src/app/controllers/*"],
+      "@/logger/*": ["./src/app/logger/*"],
+      "@/config/*": ["./src/app/config/*"],
+      "@/types/*": ["./src/app/types/*"],
+      "@/api/*": ["./src/app/routers/api/*"],
+    },
+    "strictNullChecks": true
   },
   "include": ["src/**/*"],
   "exclude": ["node_modules"]
