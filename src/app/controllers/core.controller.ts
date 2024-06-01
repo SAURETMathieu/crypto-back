@@ -1,12 +1,19 @@
 import { NextFunction, Request, Response } from "express";
-import { DataMapper } from "../types/datamapper";
+import prisma from "@/helpers/pg.prisma";
 
 export default class Controller {
-  static datamapper: DataMapper;
+
+  static get table():string {
+    throw new Error("Table name not defined");
+  }
 
   static async getAll(_: Request, response: Response) {
-    const rows = await this.datamapper.findAll();
-    response.status(200).json(rows);
+    try {
+      const rows = await (prisma as any)[this.table].findMany();
+      response.status(200).json(rows);
+    } catch (error) {
+      response.status(500).json({ error: "Internal Server Error" });
+    }
   }
 
   static async getByPk(
@@ -14,17 +21,25 @@ export default class Controller {
     response: Response,
     next: NextFunction
   ) {
-    const { id } = request.params;
-    const row = await this.datamapper.findByPk(Number(id));
-    if (!row) {
-      return next();
+    try {
+      const { id } = request.params;
+      const row = await (prisma as any)[this.table].findUnique({ where: { id } });
+      if (!row) {
+        return next();
+      }
+      return response.status(200).json(row);
+    } catch (error) {
+      response.status(500).json({ error: "Internal Server Error" });
     }
-    return response.status(200).json(row);
   }
 
   static async create(request: Request, response: Response) {
-    const row = await this.datamapper.insert(request.body);
-    response.status(201).json(row);
+    try {
+      const row = await (prisma as any)[this.table].create({ data: request.body });
+      response.status(201).json(row);
+    } catch (error) {
+      response.status(500).json({ error: "Internal Server Error" });
+    }
   }
 
   static async update(
@@ -32,20 +47,25 @@ export default class Controller {
     response: Response,
     next: NextFunction
   ) {
-    const { id } = request.params;
-    const dbData = await this.datamapper.findByPk(Number(id));
+    try {
+      const { id } = request.params;
+      const dbData = await (prisma as any)[this.table].findUnique({
+        where: { id },
+      });
 
-    if (!dbData) {
-      return next();
+      if (!dbData) {
+        return next();
+      }
+
+      const data = { ...dbData, ...request.body };
+      const row = await (prisma as any)[this.table].update({
+        where: { id },
+        data,
+      });
+      return response.status(200).json(row);
+    } catch (error) {
+      response.status(500).json({ error: "Internal Server Error" });
     }
-
-    const data = { ...dbData, ...request.body };
-
-    const row = await this.datamapper.update(data);
-    if (!row) {
-      return next();
-    }
-    return response.status(200).json(row);
   }
 
   static async delete(
@@ -53,11 +73,15 @@ export default class Controller {
     response: Response,
     next: NextFunction
   ) {
-    const { id } = request.params;
-    const deleted = await this.datamapper.delete(Number(id));
-    if (!deleted) {
-      return next();
+    try {
+      const { id } = request.params;
+      const deleted = await (prisma as any)[this.table].delete({ where: { id } });
+      if (!deleted) {
+        return next();
+      }
+      return response.status(204).json();
+    } catch (error) {
+      response.status(500).json({ error: "Internal Server Error" });
     }
-    return response.status(204).json();
   }
 }
