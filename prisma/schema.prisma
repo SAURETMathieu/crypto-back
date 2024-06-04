@@ -2,26 +2,71 @@ datasource db {
   provider = "postgresql"
   url      = env("DATABASE_URL")
 }
- 
+
 generator client {
   provider = "prisma-client-js"
 }
- 
+
+enum UserRole {
+  USER
+  ADMIN
+}
+
+enum WalletType {
+  Centralized
+  Decentralized
+}
+
+enum WalletExchange {
+  Binance
+  Coinbase
+  Kraken
+  Bitstamp
+  Kucoin
+}
+
+enum WalletBlockchain {
+  All
+  Bitcoin
+  Ethereum
+  BSC
+  Polygon
+  Solana
+  Avalanche
+}
+
+enum SubscriptionStatus {
+  ACTIVE
+  CANCELED
+  PAST_DUE
+  TRIAL
+}
+
+enum InvoiceStatus {
+  PENDING
+  PAID
+  FAILED
+  CANCELED
+}
+
 model User {
-  id            String          @id @default(cuid())
+  id            String    @id @default(cuid())
   name          String?
-  email         String          @unique
-  emailVerified DateTime?       
+  email         String    @unique
+  emailVerified DateTime?
   image         String?
+  role          UserRole  @default(USER)
+
   accounts      Account[]
   sessions      Session[]
-  // Optional for WebAuthn support
-  Authenticator Authenticator[]
- 
+  wallets       Wallet[]
+  subscriptions Subscription[]
+  invoices      Invoice[]
+
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
 }
- 
+
 model Account {
   userId            String
   type              String
@@ -34,45 +79,218 @@ model Account {
   scope             String?
   id_token          String?
   session_state     String?
- 
+
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
- 
+
   user User @relation(fields: [userId], references: [id], onDelete: Cascade)
- 
+
   @@id([provider, providerAccountId])
 }
- 
+
 model Session {
   sessionToken String   @unique
   userId       String
   expires      DateTime
   user         User     @relation(fields: [userId], references: [id], onDelete: Cascade)
- 
+
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
 }
- 
+
 model VerificationToken {
   identifier String
   token      String
   expires    DateTime
- 
+
   @@id([identifier, token])
 }
- 
-// Optional for WebAuthn support
-model Authenticator {
-  credentialID         String  @unique
-  userId               String
-  providerAccountId    String
-  credentialPublicKey  String
-  counter              Int
-  credentialDeviceType String
-  credentialBackedUp   Boolean
-  transports           String?
- 
-  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
- 
-  @@id([userId, credentialID])
+
+model Wallet {
+  id         Int              @id @default(autoincrement())
+  address    String?
+  blockchain WalletBlockchain @default(All)
+  exchange   WalletExchange?
+  name       String
+  type       WalletType
+  userId     String
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  user    User            @relation(fields: [userId], references: [id], onDelete: Cascade)
+  cryptos WalletCryptos[]
+  apiKey  ApiKey[]
+  bots    Bot[]
+
+  @@unique([userId, name, address])
+}
+
+model Crypto {
+  id       Int    @id @default(autoincrement())
+  asset    String @unique
+  name     String @unique
+  digit    Int
+  logo_url String
+  currency String @default("USDT")
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  wallets WalletCryptos[]
+  trades  Trade[]
+  bots    Bot[]
+}
+
+model WalletCryptos {
+  walletId Int
+  cryptoId Int
+
+  createdAt DateTime @default(now())
+
+  wallet Wallet @relation(fields: [walletId], references: [id], onDelete: Cascade)
+  crypto Crypto @relation(fields: [cryptoId], references: [id], onDelete: Cascade)
+
+  @@id([walletId, cryptoId])
+}
+
+model Trade {
+  id             Int      @id @default(autoincrement())
+  buy_price      Float
+  sell_price     Float
+  buy_quantity   Float
+  sell_quantity  Float
+  buy_timestamp  DateTime
+  sell_timestamp DateTime
+  status         String
+  buy_fees       Float
+  sell_fees      Float
+  currency       String
+  cryptoId       Int
+  botId          Int
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  crypto Crypto @relation(fields: [cryptoId], references: [id], onDelete: Cascade)
+  bot    Bot    @relation(fields: [botId], references: [id], onDelete: Cascade)
+}
+
+model ApiKey {
+  id         Int      @id @default(autoincrement())
+  key        String
+  name       String
+  write      Boolean
+  read       Boolean
+  expired_at DateTime
+  walletId   Int
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  wallet Wallet @relation(fields: [walletId], references: [id], onDelete: Cascade)
+  bot    Bot[]
+
+  @@unique([key, walletId])
+}
+
+model Bot {
+  id               Int    @id @default(autoincrement())
+  name             String
+  status           String
+  starting_balance Float
+  ending_balance   Float
+  max_trade_open   Int
+  max_invest       Float
+  apiKeyId         Int
+  walletId         Int
+  cryptoId         Int
+  strategieId      Int
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  apiKey    ApiKey   @relation(fields: [apiKeyId], references: [id], onDelete: Cascade)
+  wallet    Wallet   @relation(fields: [walletId], references: [id], onDelete: Cascade)
+  crypto    Crypto   @relation(fields: [cryptoId], references: [id], onDelete: Cascade)
+  trades    Trade[]
+  strategie Strategy @relation(fields: [strategieId], references: [id], onDelete: Cascade)
+
+  @@unique([name, walletId])
+  @@unique([cryptoId, walletId, strategieId])
+}
+
+model Strategy {
+  id                Int    @id @default(autoincrement())
+  name              String @unique
+  description       String
+  variation         String @unique
+  execution_delay   Int    @default(60)
+  percent_per_trade Float  @default(1)
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  bots Bot[]
+}
+
+model Plan {
+  id              Int            @id @default(autoincrement())
+  name            String         @unique
+  description     String
+  price           Float
+  currency        String
+  interval        String
+  intervalCount   Int
+  stripeId        String
+  trialPeriodDays Int
+  isActive        Boolean        @default(true)
+  features        String[]
+  subscriptions   Subscription[]
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+}
+
+model Subscription {
+  id               Int                @id @default(autoincrement())
+  userId           String
+  planId           Int
+  startDate        DateTime           @default(now())
+  endDate          DateTime?
+  status           SubscriptionStatus
+  currentPeriodEnd DateTime?
+  lastPaymentDate  DateTime?
+  nextPaymentDate  DateTime?
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  user     User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+  plan     Plan      @relation(fields: [planId], references: [id], onDelete: Cascade)
+  invoices Invoice[]
+
+  @@unique([userId, planId])
+}
+
+model Invoice {
+  id              Int           @id @default(autoincrement())
+  userId          String
+  subscriptionId  Int
+  amount          Float
+  currency        String
+  status          InvoiceStatus
+  issuedAt        DateTime      @default(now())
+  paidAt          DateTime?
+  dueDate         DateTime
+  stripeInvoiceId String
+  description     String
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  user         User         @relation(fields: [userId], references: [id], onDelete: Cascade)
+  subscription Subscription @relation(fields: [subscriptionId], references: [id], onDelete: Cascade)
+
+  @@unique([stripeInvoiceId])
 }
