@@ -1,18 +1,20 @@
+
 import { Request, RequestHandler } from "express";
-import { ValidationError } from "joi";
+import { ZodError } from "zod";
 import ApiError from "../errors/api.error";
 
-const validateRequest = <T>(
+const validationMiddleware = <T>(
   sourceProperty: keyof Request,
-  schema: T
+  schema: any
 ): RequestHandler => {
   return async (request: Request, _, next) => {
     try {
-      await (schema as any).validateAsync(request[sourceProperty]);
+      await schema.parseAsync(request[sourceProperty]);
       next();
     } catch (error) {
-      if (error instanceof ValidationError) {
-        next(new ApiError(error.details[0].message, { httpStatus: 400 }));
+      if (error instanceof ZodError) {
+        const errorMessage = error.errors[0]?.message || "Validation error";
+        next(new ApiError(errorMessage, { httpStatus: 400 }));
       } else {
         next(new ApiError("Validation error", { httpStatus: 400 }));
       }
@@ -20,4 +22,4 @@ const validateRequest = <T>(
   };
 };
 
-export default validateRequest;
+export default validationMiddleware;
