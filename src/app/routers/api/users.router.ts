@@ -33,7 +33,7 @@ userRouter
   );
 
 userRouter
-  .route("/:id(\\d+)")
+  .route("/:id")
   /**
    * GET /api/examples/{id}
    * @summary Get a User from its id
