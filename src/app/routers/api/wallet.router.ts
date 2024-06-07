@@ -3,7 +3,6 @@ import WalletController from "../../controllers/wallet.controller";
 import controllerWrapper from "../../helpers/controller.wrapper";
 import validationMiddleware from "../../middlewares/validation.middleware";
 import { centralizedWalletCreateSchema, decentralizedWalletCreateSchema } from "../../schemas/wallet.create.schema";
-import walletUpdateSchema from "../../schemas/wallet.update.schema";
 
 const walletRouter = express.Router();
 
@@ -17,7 +16,8 @@ walletRouter
    * @return {ApiJsonError} 400 - Bad request response - application/json
    * @return {ApiJsonError} 500 - Internal Server Error - application/json
    */
-  .get(controllerWrapper(WalletController.getAll.bind(WalletController)))
+  .get(
+    controllerWrapper(WalletController.userGetAll.bind(WalletController)))
 
 
 walletRouter
@@ -33,7 +33,7 @@ walletRouter
    */
   .post(
     validationMiddleware("body", centralizedWalletCreateSchema),
-    controllerWrapper(WalletController.createCentralized.bind(WalletController))
+    controllerWrapper(WalletController.createWallet.bind(WalletController))
   );
 
   walletRouter
@@ -49,7 +49,7 @@ walletRouter
    */
   .post(
     validationMiddleware("body", decentralizedWalletCreateSchema),
-    controllerWrapper(WalletController.createDecentralized.bind(WalletController))
+    controllerWrapper(WalletController.createWallet.bind(WalletController))
   );
 
 walletRouter
@@ -77,7 +77,7 @@ walletRouter
    * @return {ApiJsonError} 500 - Internal Server Error - application/json
    */
   .patch(
-    validationMiddleware("body", walletUpdateSchema),
+    //validationMiddleware("body", walletUpdateSchema),
     controllerWrapper(WalletController.update.bind(WalletController))
   )
   /**

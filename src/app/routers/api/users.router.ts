@@ -2,8 +2,6 @@ import express from "express";
 import UserController from "../../controllers/user.controller";
 import controllerWrapper from "../../helpers/controller.wrapper";
 import validationMiddleware from "../../middlewares/validation.middleware";
-import exampleCreateSchema from "../../schemas/example.create.schema";
-import exampleUpdateSchema from "../../schemas/example.update.schema";
 
 const userRouter = express.Router();
 
@@ -28,7 +26,7 @@ userRouter
    * @return {ApiJsonError} 500 - Internal Server Error - application/json
    */
   .post(
-    validationMiddleware("body", exampleCreateSchema),
+    //validationMiddleware("body", exampleCreateSchema),
     controllerWrapper(UserController.create.bind(UserController))
   );
 
@@ -57,7 +55,7 @@ userRouter
    * @return {ApiJsonError} 500 - Internal Server Error - application/json
    */
   .patch(
-    validationMiddleware("body", exampleUpdateSchema),
+    //validationMiddleware("body", exampleUpdateSchema),
     controllerWrapper(UserController.update.bind(UserController))
   )
   /**

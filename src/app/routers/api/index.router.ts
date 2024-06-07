@@ -1,13 +1,13 @@
+import authenticateToken from "../../middlewares/authenticate.token";
 import express from "express";
+import errorHandler from "../../middlewares/error.middleware";
 import apiUserRouter from "./users.router";
-import apiAuthRouter from "./auth.router";
 import apiWalletsRouter from "./wallet.router";
-import errorHandler from '../../middlewares/error.middleware';
 
 const apiRouter = express.Router();
 
 apiRouter.use("/users", apiUserRouter);
-apiRouter.use("/wallets", apiWalletsRouter);
+apiRouter.use("/wallets", authenticateToken, apiWalletsRouter);
 
 apiRouter.use(errorHandler);
 
