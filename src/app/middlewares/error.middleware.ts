@@ -18,7 +18,7 @@ const errorHandler: ErrorRequestHandler = (
       logger.error("Error 500", err);
       const destinataire = process.env.MAIL as string;
       const sujet = "Erreur 500 sur le site";
-      const contenu = `Le site rencontre des problèmes. 
+      const contenu = `Le site rencontre des problèmes.
     Détails de l'erreur :\n\n${err.stack}`;
 
       // const envoiReussi = await sendEmail(destinataire, sujet, contenu);
@@ -28,7 +28,9 @@ const errorHandler: ErrorRequestHandler = (
       // }
     }
 
-    return response.status(statusError).json({ error: err.message });
+    const messageSplited = err.message.split(': ');
+    const errorMessage = messageSplited[messageSplited.length - 1];
+    return response.status(statusError).json({ error: errorMessage });
   } catch (err: any) {
     logger.error("Error in error handling middleware", err);
     return response.status(500).json("Erreur lors de la gestion de l'erreur.");
