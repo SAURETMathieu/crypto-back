@@ -1,5 +1,6 @@
 import { NextFunction, Request, Response } from "express";
 import ApiError from "../errors/api.error";
+import handlePrismaError from "../errors/prisma.error";
 
 type Controller = (
   request: Request,
@@ -16,6 +17,7 @@ export default (controller: Controller) =>
     try {
       await controller(request, response, next);
     } catch (err: any) {
-      next(new ApiError(err.message, { httpStatus: 500 }));
+      const error = handlePrismaError(err);
+      next(new ApiError(error, { httpStatus: 500 }));
     }
   };
