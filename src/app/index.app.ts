@@ -3,6 +3,7 @@ import corsMiddleware from "./middlewares/cors";
 import errorMiddleware from "./middlewares/error.middleware";
 import httpLogger from "./middlewares/httpLogger";
 import router from "./routers/index.router";
+import moralisMiddleware from "./middlewares/moralis.middleware";
 
 const app = express();
 
@@ -10,6 +11,8 @@ app.use(corsMiddleware);
 
 app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
+
+app.use(moralisMiddleware);
 
 app.use(httpLogger);
 

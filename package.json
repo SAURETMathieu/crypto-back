@@ -15,6 +15,7 @@
   "author": "",
   "license": "ISC",
   "dependencies": {
+    "@moralisweb3/common-evm-utils": "^2.26.4",
     "@prisma/client": "^5.14.0",
     "bcrypt": "^5.1.1",
     "cors": "^2.8.5",
@@ -22,6 +23,7 @@
     "express": "^4.19.2",
     "google-auth-library": "^9.10.0",
     "jsonwebtoken": "^9.0.2",
+    "moralis": "^2.26.4",
     "pg": "^8.11.5",
     "web3": "^4.9.0",
     "winston": "^3.13.0",
