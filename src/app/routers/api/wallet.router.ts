@@ -3,6 +3,7 @@ import WalletController from "../../controllers/wallet.controller";
 import controllerWrapper from "../../helpers/controller.wrapper";
 import validationMiddleware from "../../middlewares/validation.middleware";
 import { centralizedWalletCreateSchema, decentralizedWalletCreateSchema } from "../../schemas/wallet.create.schema";
+import { walletUpdateSchema } from "../../schemas/wallet.update.schema";
 
 const walletRouter = express.Router();
 
@@ -33,7 +34,7 @@ walletRouter
    */
   .post(
     validationMiddleware("body", centralizedWalletCreateSchema),
-    controllerWrapper(WalletController.createWallet.bind(WalletController))
+    controllerWrapper(WalletController.create.bind(WalletController))
   );
 
   walletRouter
@@ -49,11 +50,11 @@ walletRouter
    */
   .post(
     validationMiddleware("body", decentralizedWalletCreateSchema),
-    controllerWrapper(WalletController.createWallet.bind(WalletController))
+    controllerWrapper(WalletController.create.bind(WalletController))
   );
 
 walletRouter
-  .route("/:id")
+  .route("/:id(\\d+)")
   /**
    * GET /api/wallets/{id}
    * @summary Get a Wallet from its id
@@ -77,7 +78,7 @@ walletRouter
    * @return {ApiJsonError} 500 - Internal Server Error - application/json
    */
   .patch(
-    //validationMiddleware("body", walletUpdateSchema),
+    validationMiddleware("body", walletUpdateSchema),
     controllerWrapper(WalletController.update.bind(WalletController))
   )
   /**
