@@ -7,12 +7,8 @@ export default class Controller {
   }
 
   static async getAll(_: Request, response: Response) {
-    try {
       const rows = await (prisma as any)[this.table].findMany();
-      response.status(200).json(rows);
-    } catch (error) {
-      response.status(500).json({ error: "Internal Server Error" });
-    }
+      return response.status(200).json(rows);
   }
 
   static async getByPk(
@@ -32,12 +28,11 @@ export default class Controller {
 
   static async create(request: Request, response: Response) {
     const { body } = request;
-    body.userId = "clx0dzekq00018bidpe7al2t8";
+    body.userId = request.user.id;
     body.type = "Centralized";
     delete body.key;
-    console.log(body);
     const row = await prisma.wallet.create({ data: body });
-    response.status(201).json(row);
+    return response.status(201).json(row);
   }
 
   static async update(
@@ -68,12 +63,24 @@ export default class Controller {
     next: NextFunction
   ) {
     const { id } = request.params;
-    const deleted = await (prisma as any)[this.table].delete({
-      where: { id: parseInt(id, 10) },
+    const userId = request.user.id;
+    const walletId = parseInt(id, 10);
+    const wallet = await prisma.wallet.findUnique({
+      where: { id: walletId },
     });
-    if (!deleted) {
-      return next();
+    if (!wallet) {
+      return response.status(404).json({ error: "Wallet not found" });
     }
+
+    if (wallet.userId !== userId && request.user.role !== "admin") {
+      return response.status(403).json({ error: "Forbidden" });
+    }
+
+    await prisma.wallet.delete({
+      where: { id: walletId },
+    });
+
+    console.log("wallet deleted");
     return response.status(204).json();
   }
 }
