@@ -118,10 +118,12 @@ model Wallet {
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
 
-  user    User            @relation(fields: [userId], references: [id], onDelete: Cascade)
-  cryptos WalletCryptos[]
-  apiKey  ApiKey[]
-  bots    Bot[]
+  user         User            @relation(fields: [userId], references: [id], onDelete: Cascade)
+  cryptos      WalletCryptos[]
+  apiKey       ApiKey[]
+  bots         Bot[]
+  balances     Balance[]
+  transactions Transaction[]
 
   @@unique([userId, name, address])
 }
@@ -137,9 +139,11 @@ model Crypto {
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
 
-  wallets WalletCryptos[]
-  trades  Trade[]
-  bots    Bot[]
+  wallets      WalletCryptos[]
+  trades       Trade[]
+  bots         Bot[]
+  balances     Balance[]
+  transactions Transaction[]
 }
 
 model WalletCryptos {
@@ -293,4 +297,45 @@ model Invoice {
   subscription Subscription @relation(fields: [subscriptionId], references: [id], onDelete: Cascade)
 
   @@unique([stripeInvoiceId])
+}
+
+model Transaction {
+  id          Int       @id @default(autoincrement())
+  idx         String    @unique
+  fromAddress String?
+  toAddress   String?
+  fromLabel   String?
+  toLabel     String?
+  fees        Float?
+  value       Float?
+  status      Int?
+  type        String?
+  timestamp   DateTime?
+  cryptoId    Int
+  walletId    Int
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  crypto Crypto @relation(fields: [cryptoId], references: [id], onDelete: Cascade)
+  wallet Wallet @relation(fields: [walletId], references: [id], onDelete: Cascade)
+}
+
+model Balance {
+  id        Int      @id @default(autoincrement())
+  nbToken   Float
+  price     Float?
+  price24h  Float?
+  timestamp DateTime
+  percent   Float?
+  walletId  Int
+  cryptoId  Int
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  wallet Wallet @relation(fields: [walletId], references: [id], onDelete: Cascade)
+  crypto Crypto @relation(fields: [cryptoId], references: [id], onDelete: Cascade)
+
+  @@unique([cryptoId, walletId, timestamp])
 }
