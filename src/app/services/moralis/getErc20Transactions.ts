@@ -39,6 +39,7 @@ function filterAndFormatTransactions(transactions:any) {
         toAddress: transaction._data.toAddress._value,
         toLabel: transaction._data.toAddressLabel,
         value: transaction._data.valueDecimal,
+        status: 1,
         transactionFees: null,
         timestamp: transaction._data.blockTimestamp,
       };
