@@ -1,5 +1,5 @@
 import Moralis from 'moralis';
-
+import {Decimal} from 'decimal.js';
 //cost 100 per request => 400 per day max
 export async function getWalletTokenBalancesWithPrice(walletAddress: string, blockchain: string) {
   try {
@@ -19,9 +19,9 @@ export async function getWalletTokenBalancesWithPrice(walletAddress: string, blo
       logo: token.logo,
       decimals: token.decimals,
       usdPrice: token.usdPrice,
-      usdPrice24hr: token.usdPrice24hrPercentChange,
+      usdPrice24h: token.usdPrice24hrPercentChange,
       portfolioPercentage: token.portfolioPercentage,
-      balanceFormatted: token.balanceFormatted
+      balance: new Decimal(token.balanceFormatted)
     }));
 
     return formattedData;
