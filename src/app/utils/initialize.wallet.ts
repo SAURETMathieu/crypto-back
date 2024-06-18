@@ -69,6 +69,7 @@ export async function createWalletWithBalancesAndTransactions(
             toAddress: transaction.toAddress,
             fromLabel: transaction.fromLabel,
             toLabel: transaction.toLabel,
+            price: transaction.tokenPrice,
             fees: transaction.fees,
             value: transaction.value,
             status: transaction.status,
