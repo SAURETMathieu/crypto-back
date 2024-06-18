@@ -65,7 +65,7 @@ walletRouter
    * @return {ApiJsonError} 404 - Not found response - application/json
    * @return {ApiJsonError} 500 - Internal Server Error - application/json
    */
-  .get(controllerWrapper(WalletController.getByPk.bind(WalletController)))
+  .get(controllerWrapper(WalletController.getWalletWithTransactionsAndBalances.bind(WalletController)))
   /**
    * PATCH /api/wallets/{id}
    * @summary Update a Wallet
