@@ -24,8 +24,8 @@ export async function getTokensPrices(
       }
     );
 
-    console.log(response.result);
-    return true;
+    //console.log(response.result);
+    return response.result;
   } catch (e) {
     console.error(e);
     return null;
