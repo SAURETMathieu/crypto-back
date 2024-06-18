@@ -229,6 +229,44 @@ CREATE TABLE "Invoice" (
     CONSTRAINT "Invoice_pkey" PRIMARY KEY ("id")
 );
 
+-- CreateTable
+CREATE TABLE "Transaction" (
+    "id" SERIAL NOT NULL,
+    "idx" TEXT NOT NULL,
+    "fromAddress" TEXT,
+    "toAddress" TEXT,
+    "fromLabel" TEXT,
+    "toLabel" TEXT,
+    "fees" DOUBLE PRECISION,
+    "value" DOUBLE PRECISION,
+    "status" INTEGER,
+    "type" TEXT,
+    "timestamp" TIMESTAMP(3),
+    "price" DOUBLE PRECISION,
+    "cryptoId" INTEGER NOT NULL,
+    "walletId" INTEGER NOT NULL,
+    "createdAt" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    "updatedAt" TIMESTAMP(3) NOT NULL,
+
+    CONSTRAINT "Transaction_pkey" PRIMARY KEY ("id")
+);
+
+-- CreateTable
+CREATE TABLE "Balance" (
+    "id" SERIAL NOT NULL,
+    "nbToken" DOUBLE PRECISION NOT NULL,
+    "price" DOUBLE PRECISION,
+    "price24h" DOUBLE PRECISION,
+    "timestamp" TIMESTAMP(3) NOT NULL,
+    "percent" DOUBLE PRECISION,
+    "walletId" INTEGER NOT NULL,
+    "cryptoId" INTEGER NOT NULL,
+    "createdAt" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    "updatedAt" TIMESTAMP(3) NOT NULL,
+
+    CONSTRAINT "Balance_pkey" PRIMARY KEY ("id")
+);
+
 -- CreateIndex
 CREATE UNIQUE INDEX "User_email_key" ON "User"("email");
 
@@ -267,6 +305,12 @@ CREATE UNIQUE INDEX "Subscription_userId_planId_key" ON "Subscription"("userId",
 
 -- CreateIndex
 CREATE UNIQUE INDEX "Invoice_stripeInvoiceId_key" ON "Invoice"("stripeInvoiceId");
+
+-- CreateIndex
+CREATE UNIQUE INDEX "Transaction_idx_key" ON "Transaction"("idx");
+
+-- CreateIndex
+CREATE UNIQUE INDEX "Balance_cryptoId_walletId_timestamp_key" ON "Balance"("cryptoId", "walletId", "timestamp");
 
 -- AddForeignKey
 ALTER TABLE "Account" ADD CONSTRAINT "Account_userId_fkey" FOREIGN KEY ("userId") REFERENCES "User"("id") ON DELETE CASCADE ON UPDATE CASCADE;
@@ -315,3 +359,15 @@ ALTER TABLE "Invoice" ADD CONSTRAINT "Invoice_userId_fkey" FOREIGN KEY ("userId"
 
 -- AddForeignKey
 ALTER TABLE "Invoice" ADD CONSTRAINT "Invoice_subscriptionId_fkey" FOREIGN KEY ("subscriptionId") REFERENCES "Subscription"("id") ON DELETE CASCADE ON UPDATE CASCADE;
+
+-- AddForeignKey
+ALTER TABLE "Transaction" ADD CONSTRAINT "Transaction_cryptoId_fkey" FOREIGN KEY ("cryptoId") REFERENCES "Crypto"("id") ON DELETE CASCADE ON UPDATE CASCADE;
+
+-- AddForeignKey
+ALTER TABLE "Transaction" ADD CONSTRAINT "Transaction_walletId_fkey" FOREIGN KEY ("walletId") REFERENCES "Wallet"("id") ON DELETE CASCADE ON UPDATE CASCADE;
+
+-- AddForeignKey
+ALTER TABLE "Balance" ADD CONSTRAINT "Balance_walletId_fkey" FOREIGN KEY ("walletId") REFERENCES "Wallet"("id") ON DELETE CASCADE ON UPDATE CASCADE;
+
+-- AddForeignKey
+ALTER TABLE "Balance" ADD CONSTRAINT "Balance_cryptoId_fkey" FOREIGN KEY ("cryptoId") REFERENCES "Crypto"("id") ON DELETE CASCADE ON UPDATE CASCADE;

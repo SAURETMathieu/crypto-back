@@ -311,6 +311,7 @@ model Transaction {
   status      Int?
   type        String?
   timestamp   DateTime?
+  price       Float?
   cryptoId    Int
   walletId    Int
 
