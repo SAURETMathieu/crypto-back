@@ -26,7 +26,7 @@ export default class Controller {
     return response.status(200).json(row);
   }
 
-  static async create(request: Request, response: Response) {
+  static async create(request: Request, response: Response, next: NextFunction): Promise<Response<any> | void> {
     const { body } = request;
     body.userId = request.user.id;
     body.type = "Centralized";
