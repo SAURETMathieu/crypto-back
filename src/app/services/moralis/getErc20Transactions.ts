@@ -1,5 +1,5 @@
 import Moralis from 'moralis';
-
+import formatBlockchain from '../../utils/formatBlockchain';
 //cost 50 per request => 800 per day max
 
 export async function getErc20Transactions(walletAddress: string, blockchain: string) {
@@ -9,7 +9,7 @@ export async function getErc20Transactions(walletAddress: string, blockchain: st
     }
 
     const response = await Moralis.EvmApi.token.getWalletTokenTransfers({
-      "chain": "0x1",
+      "chain": formatBlockchain(blockchain),
       "order": "DESC",
       // "fromDate": "12/14/18",
       // "toDate": "14/12/24",

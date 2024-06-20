@@ -18,7 +18,7 @@ walletRouter
    * @return {ApiJsonError} 500 - Internal Server Error - application/json
    */
   .get(
-    controllerWrapper(WalletController.userGetAll.bind(WalletController)))
+    controllerWrapper(WalletController.getAllWalletWithTransactionsAndBalances.bind(WalletController)))
 
 
 walletRouter

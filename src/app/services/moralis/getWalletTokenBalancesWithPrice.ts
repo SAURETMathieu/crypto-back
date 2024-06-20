@@ -1,13 +1,15 @@
 import Moralis from 'moralis';
 import {Decimal} from 'decimal.js';
+import formatBlockchain from '../../utils/formatBlockchain';
 //cost 100 per request => 400 per day max
+
 export async function getWalletTokenBalancesWithPrice(walletAddress: string, blockchain: string) {
   try {
     if (!Moralis.Core.isStarted) {
       return null;
     }
     const response = await Moralis.EvmApi.wallets.getWalletTokenBalancesPrice({
-      "chain": "0x1",
+      "chain": formatBlockchain(blockchain),
       "excludeSpam": true,
       "excludeUnverifiedContracts": true,
       "address": walletAddress
@@ -16,7 +18,7 @@ export async function getWalletTokenBalancesWithPrice(walletAddress: string, blo
     const formattedData = (response.result).map((token:any) => ({
       name: token.name,
       symbol: token.symbol,
-      logo: token.logo,
+      logo: token.logo || "/empty-token.svg",
       decimals: token.decimals,
       usdPrice: token.usdPrice,
       usdPrice24h: token.usdPrice24hrPercentChange,

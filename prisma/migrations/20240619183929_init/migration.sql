@@ -307,7 +307,7 @@ CREATE UNIQUE INDEX "Subscription_userId_planId_key" ON "Subscription"("userId",
 CREATE UNIQUE INDEX "Invoice_stripeInvoiceId_key" ON "Invoice"("stripeInvoiceId");
 
 -- CreateIndex
-CREATE UNIQUE INDEX "Transaction_idx_key" ON "Transaction"("idx");
+CREATE UNIQUE INDEX "Transaction_idx_walletId_cryptoId_key" ON "Transaction"("idx", "walletId", "cryptoId");
 
 -- CreateIndex
 CREATE UNIQUE INDEX "Balance_cryptoId_walletId_timestamp_key" ON "Balance"("cryptoId", "walletId", "timestamp");

@@ -3,6 +3,7 @@ import {
   EvmTokenPriceItemInput,
 } from "@moralisweb3/common-evm-utils";
 import Moralis from "moralis";
+import formatBlockchain from '../../utils/formatBlockchain';
 
 //cost 100 per request => 400 per day max
 
@@ -17,14 +18,13 @@ export async function getTokensPrices(
 
     const response = await Moralis.EvmApi.token.getMultipleTokenPrices(
       {
-        chain: "0x1",
+        chain: formatBlockchain(blockchain),
       },
       {
         tokens,
       }
     );
 
-    //console.log(response.result);
     return response.result;
   } catch (e) {
     console.error(e);

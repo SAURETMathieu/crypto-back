@@ -1,5 +1,5 @@
 import Moralis from "moralis";
-
+import formatBlockchain from '../../utils/formatBlockchain';
 //cost 30 per request => 800 per day max
 
 export async function getNativesTransactions(
@@ -12,7 +12,7 @@ export async function getNativesTransactions(
     }
 
     const response = await Moralis.EvmApi.transaction.getWalletTransactions({
-      chain: "0x1",
+      chain: formatBlockchain(blockchain),
       order: "DESC",
       // "fromDate": "12/14/18",
       // "toDate": "14/12/24",
