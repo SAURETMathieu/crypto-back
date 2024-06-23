@@ -1,7 +1,9 @@
 import prisma from "../../helpers/pg.prisma";
 import { Prisma } from '@prisma/client'
 
-export default async function getWalletsWithBalancesAndTransactions(userId: string) {
+export default async function getWalletsWithBalancesAndTransactions(userId: string, walletId?: number) {
+
+  const walletCondition = walletId ? Prisma.sql`AND "Wallet".id = ${walletId}` : Prisma.empty;
 
   const query = Prisma.sql`
     SELECT
@@ -49,6 +51,7 @@ export default async function getWalletsWithBalancesAndTransactions(userId: stri
     ) AS transactions_agg ON transactions_agg."cryptoId" = "Crypto"."id"
       AND "Wallet".id = transactions_agg."walletId"
     WHERE "Wallet"."userId" = ${userId}
+    ${walletCondition}
     GROUP BY "Wallet".id, "Wallet".name;`;
 
     const result = await prisma.$queryRaw(query);
