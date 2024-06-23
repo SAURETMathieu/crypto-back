@@ -16,20 +16,28 @@ export async function createWalletWithBalancesAndTransactions(
         data: walletData,
       });
 
+      const cryptoCache: { [symbol: string]: any } = {};
+
       for (const tokenBalance of walletTokensBalances) {
-        let crypto = await prismaClient.crypto.findUnique({
-          where: { asset: tokenBalance.symbol },
-        });
+        let crypto = cryptoCache[tokenBalance.symbol];
 
         if (!crypto) {
-          crypto = await prismaClient.crypto.create({
-            data: {
-              asset: tokenBalance.symbol,
-              name: tokenBalance.name,
-              digit: tokenBalance.decimals,
-              logo_url: tokenBalance.logo,
-            },
+          crypto = await prismaClient.crypto.findUnique({
+            where: { asset: tokenBalance.symbol },
           });
+
+          if (!crypto) {
+            crypto = await prismaClient.crypto.create({
+              data: {
+                asset: tokenBalance.symbol,
+                name: tokenBalance.name,
+                digit: tokenBalance.decimals,
+                logo_url: tokenBalance.logo,
+              },
+            });
+          }
+
+          cryptoCache[tokenBalance.symbol] = crypto;
         }
 
         const balance = await prismaClient.balance.create({
@@ -48,20 +56,27 @@ export async function createWalletWithBalancesAndTransactions(
       }
 
       for (const transaction of transactions) {
-        let crypto = await prismaClient.crypto.findUnique({
-          where: { asset: transaction.tokenSymbol },
-        });
+        let crypto = cryptoCache[transaction.tokenSymbol];
 
         if (!crypto) {
-          crypto = await prismaClient.crypto.create({
-            data: {
-              asset: transaction.tokenSymbol,
-              name: transaction.tokenName,
-              digit: transaction.tokenDecimals,
-              logo_url: transaction.tokenLogo,
-            },
+          crypto = await prismaClient.crypto.findUnique({
+            where: { asset: transaction.tokenSymbol },
           });
+
+          if (!crypto) {
+            crypto = await prismaClient.crypto.create({
+              data: {
+                asset: transaction.tokenSymbol,
+                name: transaction.tokenName,
+                digit: transaction.tokenDecimals,
+                logo_url: transaction.tokenLogo,
+              },
+            });
+          }
+
+          cryptoCache[transaction.tokenSymbol] = crypto;
         }
+
         const createdTransaction = await prismaClient.transaction.create({
           data: {
             idx: transaction.idx,
@@ -84,11 +99,7 @@ export async function createWalletWithBalancesAndTransactions(
       }
     });
 
-    return {
-      newWallet: createdWallet,
-      newBalances: createdBalances,
-      newTransactions: createdTransactions,
-    };
+    return createdWallet;
   } catch (error) {
     console.error(
       "Error creating wallet with balances and transactions:",
