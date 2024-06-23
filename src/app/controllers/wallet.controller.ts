@@ -1,10 +1,9 @@
-import { Request, Response } from "express";
+import { NextFunction, Request, Response } from "express";
+import ApiError from "../errors/api.error";
 import prisma from "../helpers/pg.prisma";
-import { getAllTransactions } from "../services/moralis/getAllTransactions";
-import { getTokensPrices } from "../services/moralis/getTokensPrices";
-import { getWalletTokenBalancesWithPrice } from "../services/moralis/getWalletTokenBalancesWithPrice";
-import { createWalletWithBalancesAndTransactions } from "../utils/initialize.wallet";
 import CoreController from "./core.controller";
+import getWalletsWithBalancesAndTransactions from "../services/database/getWalletsWithBalancesAndTransactions";
+import createDecentralizeWallet from "../services/moralis/createDecentralizeWallet";
 
 export default class WalletController extends CoreController {
   static get table(): string {
@@ -34,72 +33,78 @@ export default class WalletController extends CoreController {
     return response.status(200).json(modifiedRows);
   }
 
-  static async create(request: Request, response: Response) {
+  static async create(
+    request: Request,
+    response: Response,
+    next: NextFunction
+  ) {
     const { body } = request;
     body.userId = request.user.id;
+    let newWallet: any;
 
-    let transactions = null;
-    let walletTokensBalances = null;
+    const walletExist = await prisma.wallet.findFirst({
+      where: {
+        address: body.address,
+        blockchain: body.blockchain,
+        userId: body.userId,
+      },
+    });
+
+    if (walletExist) {
+      const errorApi = new ApiError("Wallet already exist", {
+        httpStatus: 409,
+      });
+      return next(errorApi);
+    }
 
     if (body.exchange) {
       body.type = "Centralized";
       delete body.key;
     } else {
       body.type = "Decentralized";
-      walletTokensBalances = await getWalletTokenBalancesWithPrice(
-        body.address,
-        body.blockchain
-      );
-      transactions = await getAllTransactions(body.address, body.blockchain);
-      const tokens = transactions.map((transaction: any) => ({
-        tokenAddress: transaction.tokenAddress,
-        toBlock: transaction.blockNumber,
-      }));
+      newWallet = await createDecentralizeWallet(body);
 
-      const tokensCopies = tokens.concat(tokens);
-      const tokensPrices = await getTokensPrices(tokensCopies, body.blockchain);
-
-      console.log(tokensPrices);
-
-      transactions = transactions.map((transaction: any) => {
-        const tokenPrice = tokensPrices?.find(
-          (token: any) =>
-            token.tokenAddress.toLowerCase() ===
-              transaction.tokenAddress.toLowerCase() &&
-            token.toBlock === transaction.blockNumber
-        );
-
-        return {
-          ...transaction,
-          tokenPrice: tokenPrice?.usdPrice,
-        };
-      });
+      if (newWallet instanceof ApiError) {
+        return next(newWallet);
+      }
     }
 
-    const { newWallet, newTransactions, newBalances } =
-      await createWalletWithBalancesAndTransactions(
-        body,
-        walletTokensBalances,
-        transactions
-      );
+    const walletWithBalancesAndTransactions = await getWalletsWithBalancesAndTransactions(request.user.id, newWallet.id);
 
+    if (!walletWithBalancesAndTransactions) {
+      const errorApi = new ApiError("Wallet created but fail to get infos", {
+        httpStatus: 500,
+      });
+      return next(errorApi);
+    }
+
+    const formattedWallet = walletWithBalancesAndTransactions.map((wallet) => {
+
+      const balance = wallet.balances
+        .map((balance:any) => balance.nbToken * (balance.price ?? 0) || 0)
+        .reduce((a:number, b:number) => a + b, 0);
+
+      const modifiedWallet: any = {
+        ...wallet,
+        day: 1,
+        day7: 1,
+        month: 1,
+        fees: 1,
+        balance,
+        profits: 1000.0,
+        key: "key",
+      };
+
+      return modifiedWallet;
+    });
     //TODO calculer les profits et les frais
     //TODO calculer les variations du jour, semaine et mois
     //TODO créer une fonction générale qui fetch tout les wallets toutes les 24h (attention aux rates limite)
-    //TODO pour générer des courbes de balance, profits et frais et cryptos d'un wallet
-    //TODO retourner les données du wallet
-    const modifiedRow: any = newWallet;
-    modifiedRow.day = 1;
-    modifiedRow.day7 = 1;
-    modifiedRow.month = 1;
-    modifiedRow.fees = 250.5;
-    modifiedRow.balance = 29999.99;
-    modifiedRow.profits = 1000.0;
-    modifiedRow.key = "key";
-    return response.status(201).json(modifiedRow);
+
+    return response.status(201).json(formattedWallet);
   }
 
-  static async update(request: Request, response: Response) {
+  static async update(request: Request, response: Response, next: NextFunction) {
     const { body } = request;
     const { id } = request.params;
     const walletId = parseInt(id, 10);
@@ -108,11 +113,17 @@ export default class WalletController extends CoreController {
     });
 
     if (!walletExist) {
-      return response.status(404).json({ error: "Wallet not found" });
+      const errorApi = new ApiError("Wallet not found", {
+        httpStatus: 404,
+      });
+      return next(errorApi);
     }
 
     if (walletExist.userId !== request.user.id) {
-      return response.status(403).json({ error: "Forbidden" });
+      const errorApi = new ApiError("Forbidden", {
+        httpStatus: 403,
+      });
+      return next(errorApi);
     }
 
     delete body.key;
@@ -135,7 +146,8 @@ export default class WalletController extends CoreController {
 
   static async getWalletWithTransactionsAndBalances(
     request: Request,
-    response: Response
+    response: Response,
+    next: NextFunction
   ) {
     const { id } = request.params;
     const walletId = parseInt(id, 10);
@@ -152,11 +164,17 @@ export default class WalletController extends CoreController {
     });
 
     if (!walletWithBalances) {
-      return response.status(404).json({ error: 'Wallet not found' });
+      const errorApi = new ApiError("Wallet not found", {
+        httpStatus: 404,
+      });
+      return next(errorApi);
     }
 
     if (walletWithBalances.userId !== request.user.id) {
-      return response.status(403).json({ error: "Forbidden" });
+      const errorApi = new ApiError("Forbidden", {
+        httpStatus: 403,
+      });
+      return next(errorApi);
     }
 
     const formattedBalances = walletWithBalances?.balances.map((balance) => {
@@ -174,8 +192,42 @@ export default class WalletController extends CoreController {
       return formattedBalance;
     });
 
-      walletWithBalances.balances = formattedBalances;
+    walletWithBalances.balances = formattedBalances;
 
     return response.status(200).json(walletWithBalances);
+  }
+
+  static async getAllWalletWithTransactionsAndBalances(
+    request: Request,
+    response: Response
+  ) {
+    const { user } = request;
+    const wallets: any[] = await getWalletsWithBalancesAndTransactions(user.id);
+
+    if (!wallets || wallets.length === 0) {
+      return response.status(200).json([]);
+    }
+
+    const formattedWallets = wallets.map((wallet) => {
+
+      const balance = wallet.balances
+        .map((balance:any) => balance.nbToken * (balance.price ?? 0) || 0)
+        .reduce((a:number, b:number) => a + b, 0);
+
+      const modifiedWallet: any = {
+        ...wallet,
+        day: 1,
+        day7: 1,
+        month: 1,
+        fees: 1,
+        balance,
+        profits: 1000.0,
+        key: "key",
+      };
+
+      return modifiedWallet;
+    });
+
+    return response.status(200).json(formattedWallets);
   }
 }
