@@ -114,6 +114,7 @@ model Wallet {
   name       String
   type       WalletType
   userId     String
+  lastTransaction DateTime @default(now())
 
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
@@ -311,6 +312,7 @@ model Transaction {
   status      Int?
   type        String?
   timestamp   DateTime?
+  blockNumber Int?
   price       Float?
   cryptoId    Int
   walletId    Int
@@ -328,9 +330,12 @@ model Balance {
   id        Int      @id @default(autoincrement())
   nbToken   Float
   price     Float?
+  price1h   Float?
   price24h  Float?
   timestamp DateTime
   percent   Float?
+  realizedProfit Float?
+  unrealizedProfit Float?
   walletId  Int
   cryptoId  Int
 
