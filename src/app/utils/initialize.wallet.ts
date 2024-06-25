@@ -11,6 +11,11 @@ export async function createWalletWithBalancesAndTransactions(
   let createdTransactions: any[] = [];
 
   try {
+    const lastTransationTimestamp = new Date(transactions[transactions.length - 1]?.timestamp);
+    lastTransationTimestamp.setSeconds(lastTransationTimestamp.getSeconds() + 1);
+    const newIsoDate = lastTransationTimestamp.toISOString();
+    walletData.lastTransaction = newIsoDate;
+
     await prisma.$transaction(async (prismaClient: any) => {
       createdWallet = await prismaClient.wallet.create({
         data: walletData,
@@ -45,10 +50,13 @@ export async function createWalletWithBalancesAndTransactions(
             walletId: createdWallet.id,
             cryptoId: crypto.id,
             nbToken: tokenBalance.balance ?? 0,
-            price: tokenBalance.usdPrice ?? 0,
-            price24h: tokenBalance.usdPrice24h ?? 0,
+            price: tokenBalance.usdPrice ?? null,
+            price1h: tokenBalance.usdPrice1h ?? null,
+            price24h: tokenBalance.usdPrice24h ?? null,
             percent: tokenBalance.portfolioPercentage ?? 0,
             timestamp: new Date(),
+            realizedProfit: tokenBalance.realizedProfit ?? null,
+            unrealizedProfit: tokenBalance.unrealizedProfit ?? null,
           },
         });
 
@@ -84,12 +92,13 @@ export async function createWalletWithBalancesAndTransactions(
             toAddress: transaction.toAddress,
             fromLabel: transaction.fromLabel,
             toLabel: transaction.toLabel,
-            price: transaction.tokenPrice ?? 0,
             fees: transaction.fees ?? 0,
             value: transaction.value ?? 0,
             status: transaction.status,
             type: transaction.type,
             timestamp: transaction.timestamp,
+            blockNumber: transaction.blockNumber,
+            price: transaction.tokenPrice ?? 0,
             cryptoId: crypto.id,
             walletId: createdWallet.id,
           },
