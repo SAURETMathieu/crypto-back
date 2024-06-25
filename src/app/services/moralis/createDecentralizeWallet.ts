@@ -3,18 +3,30 @@ import { createWalletWithBalancesAndTransactions } from "../../utils/initialize.
 import { getAllTransactions } from "./getAllTransactions";
 import { getTokensPrices } from "./getTokensPrices";
 import { getWalletTokenBalancesWithPrice } from "./getWalletTokenBalancesWithPrice";
+import {Decimal} from 'decimal.js';
 
 export default async function createDecentralizeWallet(body: any) {
   try {
-    const walletTokensBalances = await getWalletTokenBalancesWithPrice(
+    let walletTokensBalances = await getWalletTokenBalancesWithPrice(
       body.address,
       body.blockchain
     );
+
+    if (!walletTokensBalances) {
+      const errorApi = new ApiError(
+        "Error while fetching wallet token balances, try again later",
+        {
+          httpStatus: 500,
+        }
+      );
+      return errorApi;
+    }
+
     let transactions = await getAllTransactions(body.address, body.blockchain);
 
-    if (!walletTokensBalances || !transactions) {
+    if (!transactions) {
       const errorApi = new ApiError(
-        "Error while fetching data, try again later",
+        "Error while fetching transactions, try again later",
         {
           httpStatus: 500,
         }
@@ -38,6 +50,7 @@ export default async function createDecentralizeWallet(body: any) {
     const results = await Promise.all(promises);
 
     const tokensPrices = results.flat();
+
     if (!tokensPrices) {
       const errorApi = new ApiError(
         "Error while fetching tokens prices, try again later",
@@ -61,6 +74,43 @@ export default async function createDecentralizeWallet(body: any) {
         tokenPrice: tokenPrice?.usdPrice,
       };
     });
+
+    walletTokensBalances = walletTokensBalances.map(
+      (balance: any) => {
+        let receive = new Decimal(0);
+        let send = new Decimal(0);
+        let totalInvested = new Decimal(0);
+        let realizedProfit = new Decimal(0);
+
+        transactions.forEach((transaction: any) => {
+          if (transaction?.tokenSymbol === balance?.symbol) {
+            const transactionValue = new Decimal(transaction?.value ?? 0);
+            const tokenPrice = new Decimal(transaction?.tokenPrice ?? 0);
+            if (transaction?.fromAddress?.toLowerCase() === body.address?.toLowerCase()) {
+              send = send.plus(transactionValue);
+              realizedProfit = realizedProfit.plus(transactionValue.times(tokenPrice));
+            }
+            if (transaction?.toAddress?.toLowerCase() === body.address?.toLowerCase()) {
+              totalInvested = totalInvested.plus(transactionValue.times(tokenPrice));
+              receive = receive.plus(transactionValue);
+            }
+          }
+        });
+
+        const balanceUsdPrice = balance?.usdPrice ? new Decimal(balance?.usdPrice) : null;
+        const unrealizedProfit = balanceUsdPrice ? balanceUsdPrice
+          .times(balance?.balance)
+          .minus(totalInvested) : null;
+
+        return {
+          ...balance,
+          realizedProfit: realizedProfit.toFixed(3),
+          unrealizedProfit: unrealizedProfit? unrealizedProfit.toFixed(3) : null,
+        };
+      }
+    );
+
+    console.log("walletTokensBalances", walletTokensBalances);
 
     const newWallet = await createWalletWithBalancesAndTransactions(
       body,

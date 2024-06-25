@@ -21,9 +21,11 @@ export async function getWalletTokenBalancesWithPrice(walletAddress: string, blo
       logo: token.logo || "/empty-token.svg",
       decimals: token.decimals,
       usdPrice: token.usdPrice,
+      usdPrice1h: token.usdPrice,
       usdPrice24h: token.usdPrice24hrPercentChange,
+      totalInvested: null,
       portfolioPercentage: token.portfolioPercentage,
-      balance: new Decimal(token.balanceFormatted)
+      balance: new Decimal(token.balanceFormatted),
     }));
 
     return formattedData;

@@ -11,18 +11,19 @@ export async function getWalletTokenBalancesWithMobula(walletAddress: string, bl
         Authorization: `Bearer ${apiKey}`,
       },
     };
+    if(blockchain === "BSC") blockchain = "BNB";
     const res = await fetch(
       `https://api.mobula.io/api/1/wallet/portfolio?wallet=${walletAddress}&blockchains=${blockchain}`,
       options
     );
 
-    const { data } = await res.json();
+    const { data, error } = await res.json();
 
-    if (!res.ok) {
-      return null;
+    if (!data || !res.ok || error) {
+      return {error} || null;
     }
 
-    const formattedData = data.assets?.map((asset: any) => {
+    const formattedData = data?.assets?.map((asset: any) => {
       const assetInfo = asset.asset ?? {};
       const contractsBalances = asset.contracts_balances?.[0] ?? {};
       return {
@@ -33,7 +34,7 @@ export async function getWalletTokenBalancesWithMobula(walletAddress: string, bl
         usdPrice: asset.price ?? 0,
         usdPrice1h: asset.price_change_1h ?? 0,
         usdPrice24h: asset.price_change_24h ?? 0,
-        totalInvestined: asset.total_invested ?? 0,
+        totalInvested: asset.total_invested ?? 0,
         portfolioPercentage: asset.allocation ?? 0,
         balance: asset.token_balance ?? 0,
         usdBalance: asset.estimated_balance ?? 0,

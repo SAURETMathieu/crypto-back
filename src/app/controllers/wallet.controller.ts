@@ -1,9 +1,10 @@
 import { NextFunction, Request, Response } from "express";
 import ApiError from "../errors/api.error";
 import prisma from "../helpers/pg.prisma";
-import CoreController from "./core.controller";
 import getWalletsWithBalancesAndTransactions from "../services/database/getWalletsWithBalancesAndTransactions";
-import createDecentralizeWallet from "../services/moralis/createDecentralizeWallet";
+import createDecentralizeWalletWithMobula from "../services/mobula/createDecentralizeWallet";
+import createDecentralizeWalletWithMoralis from "../services/moralis/createDecentralizeWallet";
+import CoreController from "./core.controller";
 
 export default class WalletController extends CoreController {
   static get table(): string {
@@ -62,14 +63,27 @@ export default class WalletController extends CoreController {
       delete body.key;
     } else {
       body.type = "Decentralized";
-      newWallet = await createDecentralizeWallet(body);
-
-      if (newWallet instanceof ApiError) {
-        return next(newWallet);
+      newWallet = await createDecentralizeWalletWithMobula(body);
+      if (newWallet instanceof ApiError && body.blockchain !== "Solana") {
+        if (newWallet.message && newWallet.message.includes("invalid wallet format")) {
+          const errorApi = new ApiError("Invalid wallet format", {
+            httpStatus: 400,
+          });
+          console.log("errorApi", errorApi);
+          return next(errorApi);
+        }
+        newWallet = await createDecentralizeWalletWithMoralis(body);
+        if (newWallet instanceof ApiError) {
+          return next(newWallet);
+        }
       }
     }
 
-    const walletWithBalancesAndTransactions = await getWalletsWithBalancesAndTransactions(request.user.id, newWallet.id);
+    const walletWithBalancesAndTransactions =
+      await getWalletsWithBalancesAndTransactions(
+        request.user.id,
+        newWallet.id
+      );
 
     if (!walletWithBalancesAndTransactions) {
       const errorApi = new ApiError("Wallet created but fail to get infos", {
@@ -79,10 +93,9 @@ export default class WalletController extends CoreController {
     }
 
     const formattedWallet = walletWithBalancesAndTransactions.map((wallet) => {
-
       const balance = wallet.balances
-        .map((balance:any) => balance.nbToken * (balance.price ?? 0) || 0)
-        .reduce((a:number, b:number) => a + b, 0);
+        .map((balance: any) => balance.nbToken * (balance.price ?? 0) || 0)
+        .reduce((a: number, b: number) => a + b, 0);
 
       const modifiedWallet: any = {
         ...wallet,
@@ -104,7 +117,11 @@ export default class WalletController extends CoreController {
     return response.status(201).json(formattedWallet);
   }
 
-  static async update(request: Request, response: Response, next: NextFunction) {
+  static async update(
+    request: Request,
+    response: Response,
+    next: NextFunction
+  ) {
     const { body } = request;
     const { id } = request.params;
     const walletId = parseInt(id, 10);
@@ -209,10 +226,9 @@ export default class WalletController extends CoreController {
     }
 
     const formattedWallets = wallets.map((wallet) => {
-
       const balance = wallet.balances
-        .map((balance:any) => balance.nbToken * (balance.price ?? 0) || 0)
-        .reduce((a:number, b:number) => a + b, 0);
+        .map((balance: any) => balance.nbToken * (balance.price ?? 0) || 0)
+        .reduce((a: number, b: number) => a + b, 0);
 
       const modifiedWallet: any = {
         ...wallet,

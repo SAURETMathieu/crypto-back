@@ -10,7 +10,7 @@ interface requestOptions {
   unlisted?: boolean;
 }
 
-export async function getTransactions(walletAddress: string, blockchain: string, requestOptions?:requestOptions) {
+export async function getAllTransactions(walletAddress: string, blockchain: string, requestOptions?:requestOptions) {
   try {
     const apiKey = process.env.MOBULA_KEY as string;
     const options = {
@@ -23,9 +23,10 @@ export async function getTransactions(walletAddress: string, blockchain: string,
     const limit = requestOptions?.limit ?? 1000;
     const from = requestOptions?.from ?? "";
     const to = requestOptions?.to ?? "";
-    const order = requestOptions?.order ?? "desc";
+    const order = requestOptions?.order ?? "asc";
     const offset = requestOptions?.offset ?? 0;
     const unlisted = requestOptions?.unlisted ?? false;
+    if(blockchain === "BSC") blockchain = "BNB";
     const url = `https://api.mobula.io/api/1/wallet/transactions?wallet=${walletAddress}&blockchains=${blockchain}&limit=${limit}&from=${from}&to=${to}&order=${order}&offset=${offset}&unlisted=${unlisted}`;
     const res = await fetch(
       url,
@@ -48,16 +49,16 @@ export async function getTransactions(walletAddress: string, blockchain: string,
         tokenDecimals: asset.decimals ?? 18,
         tokenAddress: asset.contract ?? null,
         fromAddress: transaction.from,
-        fromLabel: null,
         toAddress: transaction.to,
+        fromLabel: null,
         toLabel: null,
-        price: transaction.amount_usd/transaction.amount ?? 0,
-        fees: transaction.tx_cost ?? null,
         value: transaction.amount,
+        fees: transaction.tx_cost ?? null,
         status: 1,
         type: transaction.type,
-        timestamp: transaction.timestamp,
+        timestamp: new Date(transaction.timestamp),
         blockNumber: transaction.block_number,
+        tokenPrice: transaction.amount_usd/transaction.amount ?? 0,
       };
     });
 
