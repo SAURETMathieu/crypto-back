@@ -8,7 +8,7 @@ export default async function getWalletsWithBalancesAndTransactions(userId: stri
   const query = Prisma.sql`
     SELECT
       "Wallet".*,
-      json_agg(json_build_object(
+      COALESCE(json_agg(json_build_object(
       'id', "Balance"."id",
       'asset', "Crypto".asset,
       'cryptoId', "Crypto".id,
@@ -18,11 +18,15 @@ export default async function getWalletsWithBalancesAndTransactions(userId: stri
       'currency', "Crypto".currency,
       'nbToken', "Balance"."nbToken",
       'price', "Balance"."price",
+      'price1h', "Balance"."price1h",
       'price24h', "Balance"."price24h",
       'timestamp', "Balance"."timestamp",
       'percent', "Balance"."percent",
+      'realizedProfit', "Balance"."realizedProfit",
+      'unrealizedProfit', "Balance"."unrealizedProfit",
+      'balanceUsd', "Balance"."nbToken" * COALESCE("Balance"."price", 0),
       'transactions', COALESCE(transactions_agg.transactions, '[]'::json)
-      )) AS "balances"
+      )) FILTER (WHERE "Balance"."id" IS NOT NULL), '[]'::json) AS "balances"
     FROM "Wallet"
     LEFT JOIN "Balance" ON "Wallet".id = "Balance"."walletId"
     LEFT JOIN "Crypto" ON "Balance"."cryptoId" = "Crypto".id
@@ -44,7 +48,8 @@ export default async function getWalletsWithBalancesAndTransactions(userId: stri
           'status', "Transaction"."status",
           'type', "Transaction"."type",
           'timestamp', "Transaction"."timestamp",
-          'price', "Transaction"."price"
+          'price', "Transaction"."price",
+          'blockNumber', "Transaction"."blockNumber"
         )) AS transactions
       FROM "Transaction"
       GROUP BY "Transaction"."cryptoId", "Transaction"."walletId"
