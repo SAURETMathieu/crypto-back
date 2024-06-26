@@ -11,7 +11,13 @@ export async function createWalletWithBalancesAndTransactions(
   let createdTransactions: any[] = [];
 
   try {
-    const lastTransationTimestamp = new Date(transactions[transactions.length - 1]?.timestamp);
+    const iso8601Regex = /^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}\.\d{3}Z$/;
+    let lastTransationTimestamp = transactions[transactions.length - 1]?.timestamp;
+    if (!iso8601Regex.test(lastTransationTimestamp)) {
+      lastTransationTimestamp = new Date();
+    }else{
+      lastTransationTimestamp = new Date(transactions[transactions.length - 1]?.timestamp);
+    }
     lastTransationTimestamp.setSeconds(lastTransationTimestamp.getSeconds() + 1);
     const newIsoDate = lastTransationTimestamp.toISOString();
     walletData.lastTransaction = newIsoDate;
