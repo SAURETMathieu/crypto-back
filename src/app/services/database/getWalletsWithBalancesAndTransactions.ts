@@ -1,3 +1,4 @@
+import { WalletWithBalancesAndTransactions } from "../../types/prisma";
 import prisma from "../../helpers/pg.prisma";
 import { Prisma } from '@prisma/client'
 
@@ -61,5 +62,5 @@ export default async function getWalletsWithBalancesAndTransactions(userId: stri
 
     const result = await prisma.$queryRaw(query);
 
-    return result as any[];
+    return result as WalletWithBalancesAndTransactions[];
 }
