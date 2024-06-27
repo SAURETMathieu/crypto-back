@@ -104,13 +104,11 @@ export default async function createDecentralizeWallet(body: any) {
 
         return {
           ...balance,
-          realizedProfit: realizedProfit.toFixed(3),
-          unrealizedProfit: unrealizedProfit? unrealizedProfit.toFixed(3) : null,
+          realizedProfit: parseFloat(realizedProfit.toFixed(3)),
+          unrealizedProfit: unrealizedProfit? parseFloat(unrealizedProfit.toFixed(3)) : null,
         };
       }
     );
-
-    console.log("walletTokensBalances", walletTokensBalances);
 
     const newWallet = await createWalletWithBalancesAndTransactions(
       body,
