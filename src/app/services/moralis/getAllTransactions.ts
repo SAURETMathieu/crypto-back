@@ -25,7 +25,8 @@ export async function getAllTransactions(
     const tokenInfos = getNativesTokensInfos(blockchain);
     const formattedTransaction = filterAndFormatTransactions(
       response.result,
-      tokenInfos
+      tokenInfos,
+      walletAddress
     );
 
     return formattedTransaction;
@@ -45,7 +46,8 @@ interface TokenInfos {
 function formatTransfer(
   transfer: any,
   transaction: any,
-  tokenInfos: TokenInfos
+  tokenInfos: TokenInfos,
+  walletAdress: string
 ) {
   const logo = transfer?.tokenLogo || "/empty-token.svg";
   const symbol = transfer?.tokenSymbol || tokenInfos.symbol || null;
@@ -57,7 +59,8 @@ function formatTransfer(
   const value = transfer?.valueFormatted || 0;
   const fromLabel = transfer?.fromAddressLabel || null;
   const toLabel = transfer?.toAddressLabel || null;
-  const blockNumber = transaction.blockNumber.value.toString();
+  const blockNumber = parseInt(transaction?.blockNumber?.value?.toString());
+  const type = (from && walletAdress && from.toLowerCase() === walletAdress.toLowerCase()) ? "sell" : "buy";
 
   return {
     idx: transaction.hash,
@@ -75,7 +78,7 @@ function formatTransfer(
       ? new Decimal(transaction.transactionFee)
       : null,
     status: Number(transaction.receiptStatus),
-    type: transaction.category,
+    type,
     timestamp: transaction.blockTimestamp,
     blockNumber: blockNumber,
   };
@@ -83,18 +86,19 @@ function formatTransfer(
 
 function filterAndFormatTransactions(
   transactions: any,
-  tokenInfos: TokenInfos
+  tokenInfos: TokenInfos,
+  walletAddress: string,
 ) {
   return transactions
     .filter((transaction: any) => !transaction.possibleSpam)
     .flatMap((transaction: any) => {
       const erc20Transfers = transaction.erc20Transfers.map(
         (erc20Transfer: any) =>
-          formatTransfer(erc20Transfer, transaction, tokenInfos)
+          formatTransfer(erc20Transfer, transaction, tokenInfos, walletAddress)
       );
       const nativeTransfers = transaction.nativeTransfers.map(
         (nativeTransfer: any) =>
-          formatTransfer(nativeTransfer, transaction, tokenInfos)
+          formatTransfer(nativeTransfer, transaction, tokenInfos, walletAddress)
       );
       return [...erc20Transfers, ...nativeTransfers];
     })
