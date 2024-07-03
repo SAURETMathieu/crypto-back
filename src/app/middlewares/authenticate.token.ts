@@ -10,7 +10,7 @@ export default async function authenticateToken(
 ): Promise<void> {
   const authHeader = req.headers.authorization;
   const token = authHeader && authHeader.split(" ")[1];
-  if (token == null) {
+  if (!token) {
     const err = new ApiError(
       "Veuillez vous connecter pour accéder à ce contenu",
       { httpStatus: 401 }
@@ -18,22 +18,22 @@ export default async function authenticateToken(
     return next(err);
   }
 
-  const googleAccountVerfied: any = await verifyGoogleToken(token);
+  const googleAccountVerified: any = await verifyGoogleToken(token);
 
-  if (googleAccountVerfied.error) {
+  if (googleAccountVerified.error) {
     const errorApi = new ApiError("Le token est invalide", { httpStatus: 403 });
     return next(errorApi);
   }
 
   const currentTimestampInSeconds = Math.floor(Date.now() / 1000);
 
-  if (googleAccountVerfied.exp < currentTimestampInSeconds) {
+  if (googleAccountVerified.exp < currentTimestampInSeconds) {
     const errorApi = new ApiError("La session a expiré", { httpStatus: 403 });
     return next(errorApi);
   }
 
   const userExist = await prisma.user.findFirst({
-    where: { email: googleAccountVerfied.email },
+    where: { email: googleAccountVerified.email },
   });
 
   if (!userExist) {

@@ -9,7 +9,7 @@ export default async function verifyGoogleToken(token: string) {
       idToken: token,
       audience: GOOGLE_CLIENT_ID,
     });
-    return { payload: ticket.getPayload() };
+    return ticket?.getPayload();
   } catch (error) {
     return { error: "Invalid user detected. Please try again" };
   }
